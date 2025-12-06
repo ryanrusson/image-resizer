@@ -107,13 +107,13 @@ export default function Home() {
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Image
-                src="/image-resizer-logo-no-bg.png"
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/image-resizer-logo-no-bg.png`}
                 alt="Image Resizer"
                 width={360}
                 height={100}
                 className="h-20 w-auto"
-                priority
               />
               <p className="text-sm text-muted-foreground hidden sm:block">
                 Crop, resize, and compress images in your browser
