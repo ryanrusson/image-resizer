@@ -1,65 +1,272 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useCallback, useEffect } from 'react';
+import Image from 'next/image';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import {
+  ImageUploader,
+  CropTool,
+  CompressionTool,
+  PresetSelector,
+  DownloadButton,
+  FaviconTool,
+} from '@/components/image-editor';
+import { Crop, Settings2, LayoutGrid, X, Shield, ImageIcon } from 'lucide-react';
+import type {
+  ImageFile,
+  CropArea,
+  CropShape,
+  CompressionSettings,
+  AvatarPreset,
+} from '@/types';
+import { getImageDimensions } from '@/lib/image-processing/crop';
+
+const DEFAULT_COMPRESSION: CompressionSettings = {
+  quality: 85,
+  maxWidth: 1000,
+  maxHeight: 1000,
+  format: 'image/png',
+};
 
 export default function Home() {
+  const [image, setImage] = useState<ImageFile | null>(null);
+  const [cropArea, setCropArea] = useState<CropArea | null>(null);
+  const [cropShape, setCropShape] = useState<CropShape>('rect');
+  const [rotation, setRotation] = useState(0);
+  const [compressionSettings, setCompressionSettings] =
+    useState<CompressionSettings>(DEFAULT_COMPRESSION);
+  const [selectedPreset, setSelectedPreset] = useState<AvatarPreset | null>(null);
+
+  // Cleanup blob URLs on unmount or image change
+  useEffect(() => {
+    return () => {
+      if (image?.preview) {
+        URL.revokeObjectURL(image.preview);
+      }
+    };
+  }, [image?.preview]);
+
+  const handleImageSelect = useCallback(async (file: File, preview: string) => {
+    try {
+      const { width, height } = await getImageDimensions(file);
+      setImage({ file, preview, width, height });
+      setCropArea(null);
+      setSelectedPreset(null);
+    } catch (error) {
+      console.error('Failed to load image:', error);
+    }
+  }, []);
+
+  const handleCropComplete = useCallback(
+    (
+      _area: CropArea,
+      areaPixels: CropArea,
+      shape: CropShape,
+      rot: number
+    ) => {
+      setCropArea(areaPixels);
+      setCropShape(shape);
+      setRotation(rot);
+    },
+    []
+  );
+
+  const handlePresetSelect = useCallback((preset: AvatarPreset) => {
+    setSelectedPreset(preset);
+    setCropShape(preset.shape === 'circle' ? 'circle' : 'rect');
+    setCompressionSettings((prev) => ({
+      ...prev,
+      maxWidth: preset.width,
+      maxHeight: preset.height,
+    }));
+  }, []);
+
+  const handleClearPreset = useCallback(() => {
+    setSelectedPreset(null);
+  }, []);
+
+  const handleReset = useCallback(() => {
+    if (image) {
+      URL.revokeObjectURL(image.preview);
+    }
+    setImage(null);
+    setCropArea(null);
+    setCropShape('rect');
+    setRotation(0);
+    setCompressionSettings(DEFAULT_COMPRESSION);
+    setSelectedPreset(null);
+  }, [image]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Image
+                src="/image-resizer-logo.png"
+                alt="Image Resizer"
+                width={360}
+                height={100}
+                className="h-20 w-auto"
+                priority
+              />
+              <p className="text-sm text-muted-foreground hidden sm:block">
+                Crop, resize, and compress images in your browser
+              </p>
+            </div>
+            {image && (
+              <Button variant="outline" onClick={handleReset}>
+                <X className="w-4 h-4 mr-2" />
+                Start Over
+              </Button>
+            )}
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="container mx-auto px-4 py-8">
+        {!image ? (
+          <div className="max-w-2xl mx-auto">
+            <ImageUploader onImageSelect={handleImageSelect} />
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-[1fr,380px]">
+            {/* Left column: Crop tool */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crop className="w-5 h-5" />
+                  Crop & Adjust
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CropTool
+                  imageSrc={image.preview}
+                  onCropComplete={handleCropComplete}
+                  initialShape={cropShape}
+                  initialAspect={selectedPreset ? 1 : undefined}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Right column: Settings and download */}
+            <div className="space-y-6">
+              <Tabs defaultValue="presets" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="presets" className="flex items-center gap-2">
+                    <LayoutGrid className="w-4 h-4" />
+                    Presets
+                  </TabsTrigger>
+                  <TabsTrigger value="favicon" className="flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4" />
+                    Favicon
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="flex items-center gap-2">
+                    <Settings2 className="w-4 h-4" />
+                    Settings
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="presets" className="mt-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Avatar Presets</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <PresetSelector
+                        selectedPreset={selectedPreset}
+                        onPresetSelect={handlePresetSelect}
+                        onClear={handleClearPreset}
+                      />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="favicon" className="mt-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Favicon Generator</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FaviconTool
+                        imageSrc={image.preview}
+                        originalFilename={image.file.name}
+                      />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="settings" className="mt-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Compression Settings</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <CompressionTool
+                        settings={compressionSettings}
+                        onSettingsChange={setCompressionSettings}
+                        originalSize={image.file.size}
+                      />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+
+              {/* Image info */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-sm space-y-1">
+                    <p>
+                      <span className="text-muted-foreground">Original: </span>
+                      {image.width} x {image.height}px
+                    </p>
+                    {cropArea && (
+                      <p>
+                        <span className="text-muted-foreground">Crop: </span>
+                        {Math.round(cropArea.width)} x {Math.round(cropArea.height)}px
+                      </p>
+                    )}
+                    {selectedPreset && (
+                      <p>
+                        <span className="text-muted-foreground">Output: </span>
+                        {selectedPreset.width} x {selectedPreset.height}px
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Download button */}
+              <DownloadButton
+                imageSrc={image.preview}
+                originalFilename={image.file.name}
+                cropArea={cropArea}
+                cropShape={cropShape}
+                rotation={rotation}
+                compressionSettings={compressionSettings}
+                selectedPreset={selectedPreset}
+              />
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Privacy footer */}
+      <footer className="border-t mt-auto">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Shield className="w-4 h-4" />
+            <p>
+              Privacy First: All image processing happens in your browser. Your images are never uploaded to any server.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
