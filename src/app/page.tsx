@@ -12,8 +12,9 @@ import {
   PresetSelector,
   DownloadButton,
   FaviconTool,
+  BackgroundRemover,
 } from '@/components/image-editor';
-import { Crop, Settings2, LayoutGrid, X, Shield, ImageIcon } from 'lucide-react';
+import { Crop, Settings2, LayoutGrid, X, Shield, ImageIcon, Eraser } from 'lucide-react';
 import type {
   ImageFile,
   CropArea,
@@ -107,7 +108,7 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Image
-                src="/image-resizer-logo.png"
+                src="/image-resizer-logo-no-bg.png"
                 alt="Image Resizer"
                 width={360}
                 height={100}
@@ -157,17 +158,21 @@ export default function Home() {
             {/* Right column: Settings and download */}
             <div className="space-y-6">
               <Tabs defaultValue="presets" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="presets" className="flex items-center gap-2">
-                    <LayoutGrid className="w-4 h-4" />
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="presets" className="flex items-center gap-1 text-xs px-2">
+                    <LayoutGrid className="w-3 h-3" />
                     Presets
                   </TabsTrigger>
-                  <TabsTrigger value="favicon" className="flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4" />
+                  <TabsTrigger value="favicon" className="flex items-center gap-1 text-xs px-2">
+                    <ImageIcon className="w-3 h-3" />
                     Favicon
                   </TabsTrigger>
-                  <TabsTrigger value="settings" className="flex items-center gap-2">
-                    <Settings2 className="w-4 h-4" />
+                  <TabsTrigger value="bgremove" className="flex items-center gap-1 text-xs px-2">
+                    <Eraser className="w-3 h-3" />
+                    Remove BG
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="flex items-center gap-1 text-xs px-2">
+                    <Settings2 className="w-3 h-3" />
                     Settings
                   </TabsTrigger>
                 </TabsList>
@@ -194,6 +199,20 @@ export default function Home() {
                     </CardHeader>
                     <CardContent>
                       <FaviconTool
+                        imageSrc={image.preview}
+                        originalFilename={image.file.name}
+                      />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="bgremove" className="mt-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Background Removal</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <BackgroundRemover
                         imageSrc={image.preview}
                         originalFilename={image.file.name}
                       />
